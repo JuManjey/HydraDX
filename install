@@ -1,0 +1,73 @@
+# Install Rust and Substrate
+sudo apt update
+apt install curl
+sudo curl https://getsubstrate.io -sSf | bash -s -- --fast
+source ~/.cargo/env
+
+# HydraDX compile
+git clone https://github.com/galacticcouncil/HydraDX-node.git
+cd HydraDX-node
+cargo build --release
+
+# Benchmark our server
+sudo apt update
+sudo apt install python3.8 -y
+alias python3='/usr/bin/python3.8'
+apt install python3-pip
+python3 -m pip install bench-wizard
+rustup default nightly
+./scripts/check_performance.sh
+
+# Starting
+echo "[Unit]
+Description=HydraDX Node
+After=network-online.target
+[Service]
+User=root
+WorkingDirectory=/root/HydraDX-node/
+ExecStart=/root/HydraDX-node/target/release/hydra-dx --chain lerna --name NodesGuru --validator
+Restart=always
+RestartSec=3
+LimitNOFILE=4096
+[Install]
+WantedBy=multi-user.target
+" >hydradx.service
+
+# Enable on start
+sudo mv hydradx.service /lib/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable hydradx.service
+sudo systemctl start hydradx.service
+
+# Check status
+sudo service hydradx status
+
+# Node update
+cd $HOME/HydraDX-node
+git reset --hard
+git pull
+cargo build --release
+
+# If directory HydraDX-node is not found, do following and then repeat previous commands:
+cd $HOME
+git clone https://github.com/galacticcouncil/HydraDX-node.git
+
+# Then restart node:
+sudo service hydradx restart
+sudo journalctl -u hydradx -f
+
+sudo service hydradx restart
+sudo journalctl -u hydradx -f
+
+# Check version of node to confirm update:
+$HOME/HydraDX-node/target/release/hydra-dx --version
+
+
+
+
+
+
+
+
+
+
